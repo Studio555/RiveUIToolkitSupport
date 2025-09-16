@@ -1,0 +1,88 @@
+using System.Collections.Generic;
+using Rive.Components;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace io.studio555.riveuitoolkitsupport {
+    [DefaultExecutionOrder(-1000)]
+    public class RiveUIToolkitSupport : MonoBehaviour {
+        private static RiveUIToolkitSupport _instance;
+
+        public static RiveUIToolkitSupport Instance {
+            get {
+                if (_instance != null) return _instance;
+            
+                _instance = FindFirstObjectByType<RiveUIToolkitSupport>();
+                if (_instance != null) return _instance;
+
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                    return null; // Avoid creating objects in edit mode
+#endif
+            
+                var go = new GameObject(nameof(RiveUIToolkitSupport));
+                _instance = go.AddComponent<RiveUIToolkitSupport>();
+                return _instance;
+            }
+        }
+
+    
+        private IRenderTargetStrategy _renderTargetStrategy;
+        private readonly Dictionary<RiveElement, GameObject> _registeredElements = new();
+    
+        private void Awake() {
+            if (_instance != null && _instance != this) {
+                Destroy(gameObject);
+                return;
+            }
+
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+
+            Initialize();
+        }
+
+        private void OnDestroy() {
+            if (_instance == this)
+                _instance = null;
+        }
+
+        private void Initialize() {
+            var renderTargetStrategyGo = new GameObject("RenderTargetStrategy");
+            renderTargetStrategyGo.transform.SetParent(_instance.transform);
+        
+            _renderTargetStrategy = renderTargetStrategyGo.AddComponent<PooledRenderTargetStrategy>();
+        }
+
+        public void Register(RiveElement riveElement) {
+            Debug.Log($"[RiveUIToolkitSupport] Register {riveElement} {riveElement.RiveAsset}");
+        
+            var riveElementGo = new GameObject("RiveElement - " + riveElement.InstanceId);
+            riveElementGo.transform.SetParent(_instance.transform);
+        
+            var rivePanel = riveElementGo.AddComponent<RivePanel>();
+            var simpleRenderTargetStrategy = rivePanel.gameObject.GetComponent<SimpleRenderTargetStrategy>();
+            if (simpleRenderTargetStrategy != null) {
+                Destroy(simpleRenderTargetStrategy);
+            }
+            rivePanel.RenderTargetStrategy = _renderTargetStrategy;
+        
+            var riveWidgetGo = new GameObject("RiveWidget");
+            riveWidgetGo.transform.SetParent(riveElementGo.transform);
+        
+            var riveWidget = riveWidgetGo.AddComponent<RiveWidget>();
+            riveWidget.Load(riveElement.RiveAsset);
+        
+            riveElement.style.backgroundImage = new StyleBackground(Background.FromRenderTexture(rivePanel.RenderTexture));
+            _registeredElements[riveElement] = riveElementGo;
+        }
+
+        public void Unregister(RiveElement riveElement) {
+            if (_registeredElements.TryGetValue(riveElement, out var go)) {
+                Debug.Log($"[RiveUIToolkitSupport] Unregister {riveElement}");
+                Destroy(go);
+                _registeredElements.Remove(riveElement);
+            }
+        }
+    }
+}
