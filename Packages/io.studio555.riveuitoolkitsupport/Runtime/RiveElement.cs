@@ -15,7 +15,7 @@ namespace io.studio555.riveuitoolkitsupport {
             get => _riveAsset;
             set
             {
-                if (_widget != null)
+                if (false) // (_widget != null)
                 {
                     _riveAsset = value;
                     _widget.Load(_riveAsset);
