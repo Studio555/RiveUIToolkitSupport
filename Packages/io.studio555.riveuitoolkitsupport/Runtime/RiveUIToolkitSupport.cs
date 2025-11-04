@@ -56,9 +56,9 @@ namespace io.studio555.riveuitoolkitsupport {
             _renderTargetStrategy = renderTargetStrategyGo.AddComponent<PooledRenderTargetStrategy>();
         }
 
-        public void Register(RiveElement riveElement) {
+        public RiveWidget Register(RiveElement riveElement) {
             if (_isQuitting) {
-                return;
+                return null;
             }
 
             Debug.Log($"[RiveUIToolkitSupport] Register {riveElement} {riveElement.RiveAsset}");
@@ -78,10 +78,11 @@ namespace io.studio555.riveuitoolkitsupport {
 
             var riveWidget = riveWidgetGo.AddComponent<RiveWidget>();
             riveWidget.Load(riveElement.RiveAsset);
-
+            
             riveElement.style.backgroundImage =
                 new StyleBackground(Background.FromRenderTexture(rivePanel.RenderTexture));
             _registeredElements[riveElement] = riveElementGo;
+            return riveWidget;
         }
 
         public void Unregister(RiveElement riveElement) {
