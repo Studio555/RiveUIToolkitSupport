@@ -1,5 +1,6 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <engine:VisualElement name="Root" style="flex-grow: 1; background-color: rgb(255, 182, 107);">
+    <engine:VisualElement name="Root" style="flex-grow: 1; background-color: rgb(214, 197, 171);">
+        <io.studio555.riveuitoolkitsupport.RiveElement rive-asset="project://database/Assets/UI%20Toolkit/quiz_bg.riv?fileID=-4516626237390682484&amp;guid=e437aefd021d840069cbb4d1774d8189&amp;type=3#quiz_bg" fit="Fill" name="Background" style="position: absolute; width: auto; height: auto; top: 0; left: 0; right: 0; bottom: 0;" />
         <engine:Label text="RiveUIToolkitSupport" enable-rich-text="false" style="font-size: 23px; -unity-font-style: bold; -unity-text-align: upper-center; top: 20px;" />
         <engine:Button text="Button" style="position: absolute; top: 134px; left: 125px;" />
         <io.studio555.riveuitoolkitsupport.RiveElement rive-asset="project://database/Assets/UI%20Toolkit/rotate_gesture_tutorial%201.riv?fileID=-4516626237390682484&amp;guid=b6aff8b6ee0414bdab6119dc5108ae46&amp;type=3#rotate_gesture_tutorial 1" picking-mode="Ignore" name="SwitchableRiveElement" style="position: absolute; width: 100px; height: 100px; top: 111px; left: 87px;" />

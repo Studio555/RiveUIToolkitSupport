@@ -9,6 +9,9 @@ namespace io.studio555.riveuitoolkitsupport {
     {
         private RiveWidget _widget;
         private Asset _riveAsset;
+        
+        private Fit _fit = Fit.Contain;
+        
         [UxmlAttribute]
         public Asset RiveAsset
         {
@@ -19,12 +22,26 @@ namespace io.studio555.riveuitoolkitsupport {
                 {
                     _riveAsset = value;
                     _widget.Load(_riveAsset);
+                    _widget.Fit = _fit;
                 }
                 else
                 {
                     Unregister();
                     _riveAsset = value;
                     RegisterOnce();
+                }
+            }
+        }
+        
+        [UxmlAttribute]
+        public Fit Fit
+        {
+            get => _fit;
+            set
+            {
+                _fit = value;
+                if (_widget != null) {
+                    _widget.Fit = value;
                 }
             }
         }
@@ -66,6 +83,8 @@ namespace io.studio555.riveuitoolkitsupport {
             }
 
             _widget = instance.Register(this);
+            _widget.Fit = _fit;
+            
             _isRegistered = true;
         }
 

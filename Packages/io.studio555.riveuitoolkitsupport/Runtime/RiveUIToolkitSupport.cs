@@ -53,7 +53,11 @@ namespace io.studio555.riveuitoolkitsupport {
         private void Initialize() {
             var renderTargetStrategyGo = new GameObject("RenderTargetStrategy");
             renderTargetStrategyGo.transform.SetParent(_instance.transform);
-            _renderTargetStrategy = renderTargetStrategyGo.AddComponent<PooledRenderTargetStrategy>();
+            var pooledRenderTargetStrategy = renderTargetStrategyGo.AddComponent<PooledRenderTargetStrategy>();
+           // pooledRenderTargetStrategy.Configure(new Vector2Int(2048, 2048), 1, 3, PooledRenderTargetStrategy.PoolOverflowBehavior.Flexible);
+            
+            _renderTargetStrategy = pooledRenderTargetStrategy;
+            
         }
 
         public RiveWidget Register(RiveElement riveElement) {
