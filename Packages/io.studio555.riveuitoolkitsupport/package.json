@@ -1,11 +1,11 @@
 {
     "name": "io.studio555.riveuitoolkitsupport",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "displayName": "RiveUIToolkitSupport",
     "description": "Unity Rive to UI toolkit bridge",
     "unity": "6000.0",
     "unityRelease": "27f1",
     "dependencies": {
-         "app.rive.rive-unity": "git@github.com:rive-app/rive-unity.git?path=package#v0.3.7"
+         "app.rive.rive-unity": "git@github.com:rive-app/rive-unity.git?path=package#v0.4.1-canary.15"
     }
 }

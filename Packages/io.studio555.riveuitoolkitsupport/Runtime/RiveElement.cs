@@ -12,6 +12,8 @@ namespace io.studio555.riveuitoolkitsupport {
         
         private Fit _fit = Fit.Contain;
         
+        public RiveWidget Widget => _widget;
+        
         [UxmlAttribute]
         public Asset RiveAsset
         {
@@ -102,5 +104,26 @@ namespace io.studio555.riveuitoolkitsupport {
             instance.Unregister(this);
             _isRegistered = false;
         }
+        
+        public bool TryFireTrigger(string triggerName) {
+            if (_widget == null) {
+                Debug.LogWarning($"[RiveElement] Widget is null for {this}");
+                return false;
+            }
+
+            var stateMachine = _widget.StateMachine;
+            if (stateMachine == null) {
+                Debug.LogWarning($"[RiveElement] StateMachine is null for {this}");
+                return false;
+            }
+            var trigger = stateMachine.GetTrigger(name: triggerName);
+            if (trigger == null) {
+                Debug.LogWarning($"[RiveElement] Trigger '{triggerName}' not found in StateMachine for {this}");
+                return false;
+            }
+            trigger.Fire();
+            return true;
+        }
+        
     }
 }
