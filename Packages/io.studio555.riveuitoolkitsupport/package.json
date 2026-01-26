@@ -6,6 +6,6 @@
     "unity": "6000.0",
     "unityRelease": "27f1",
     "dependencies": {
-         "app.rive.rive-unity": "git@github.com:rive-app/rive-unity.git?path=package#v0.4.1-canary.48"
+         "app.rive.rive-unity": "git@github.com:rive-app/rive-unity.git?path=package#v0.4.1"
     }
 }
