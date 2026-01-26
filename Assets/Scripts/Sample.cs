@@ -23,7 +23,8 @@ public class Sample : MonoBehaviour {
             // Example: Change the animation state based on some condition
             if (Input.GetKeyDown(KeyCode.Space)) {
                 Debug.Log("Space key pressed - triggering animation");
-                
+                _recycleArea.TryFireTrigger("");
+
             }
         }
     }
