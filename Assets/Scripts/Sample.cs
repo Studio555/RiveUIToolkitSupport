@@ -4,29 +4,22 @@ using UnityEngine.UIElements;
 
 public class Sample : MonoBehaviour {
     [SerializeField] private UIDocument uiDocument;
-
-    private RiveElement _recycleArea;
+    
+    private RiveElement _roboDude;
     
     public void Start() {
         var root = uiDocument.rootVisualElement;
-        
-        _recycleArea = root.Q<RiveElement>("RecycleArea");
-        
-        Debug.Log("RiveElement found: " + (_recycleArea != null));
-        
+        _roboDude = root.Q<RiveElement>("RoboDude");
+        Debug.Log("RiveElement found: " + (_roboDude != null));
+
+        root.Q<Button>("ToggleButton").clicked += () => {
+            _roboDude.style.display = _roboDude.style.display == DisplayStyle.None ? DisplayStyle.Flex : DisplayStyle.None;
+        };
+
     }
     
     public void Update() {
-        if (_recycleArea != null) {
-            
-            
-            // Example: Change the animation state based on some condition
-            if (Input.GetKeyDown(KeyCode.Space)) {
-                Debug.Log("Space key pressed - triggering animation");
-                _recycleArea.TryFireTrigger("");
-
-            }
-        }
+        
     }
     
 }

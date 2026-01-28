@@ -55,6 +55,13 @@ namespace io.studio555.riveuitoolkitsupport {
         public RiveElement() {
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanelEvent);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanelEvent);
+            RegisterCallback<GeometryChangedEvent>(OnGeometryChangedEvent);
+        }
+
+        private void OnGeometryChangedEvent(GeometryChangedEvent evt) {
+            if (_widget == null) return;
+            var isVisible = evt.newRect is { width: > 0, height: > 0 };
+            _widget.enabled = isVisible;
         }
 
         private void OnAttachToPanelEvent(AttachToPanelEvent _) {
@@ -72,7 +79,7 @@ namespace io.studio555.riveuitoolkitsupport {
 
             Unregister();
         }
-
+        
 
         private void RegisterOnce() {
             if (_isRegistered) {
@@ -86,6 +93,7 @@ namespace io.studio555.riveuitoolkitsupport {
 
             _widget = instance.Register(this);
             _widget.Fit = _fit;
+            _widget.HitTestBehavior = HitTestBehavior.None;
             
             _isRegistered = true;
         }
@@ -106,6 +114,7 @@ namespace io.studio555.riveuitoolkitsupport {
         }
         
         public bool TryFireTrigger(string triggerName) {
+            
             if (_widget == null) {
                 Debug.LogWarning($"[RiveElement] Widget is null for {this}");
                 return false;

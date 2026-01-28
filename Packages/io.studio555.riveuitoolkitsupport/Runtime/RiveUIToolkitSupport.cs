@@ -54,7 +54,7 @@ namespace io.studio555.riveuitoolkitsupport {
             var renderTargetStrategyGo = new GameObject("RenderTargetStrategy");
             renderTargetStrategyGo.transform.SetParent(_instance.transform);
             var pooledRenderTargetStrategy = renderTargetStrategyGo.AddComponent<PooledRenderTargetStrategy>();
-           // pooledRenderTargetStrategy.Configure(new Vector2Int(2048, 2048), 1, 3, PooledRenderTargetStrategy.PoolOverflowBehavior.Flexible);
+            pooledRenderTargetStrategy.Configure(new Vector2Int(512, 512), 1, 3, PooledRenderTargetStrategy.PoolOverflowBehavior.Flexible);
             
             _renderTargetStrategy = pooledRenderTargetStrategy;
             
