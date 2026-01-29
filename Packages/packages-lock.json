@@ -233,9 +233,7 @@
       "version": "file:io.studio555.riveuitoolkitsupport",
       "depth": 0,
       "source": "embedded",
-      "dependencies": {
-        "app.rive.rive-unity": "git@github.com:rive-app/rive-unity.git?path=package#v0.4.1"
-      }
+      "dependencies": {}
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",

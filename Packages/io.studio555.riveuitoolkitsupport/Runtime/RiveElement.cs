@@ -8,6 +8,8 @@ namespace io.studio555.riveuitoolkitsupport {
     public partial class RiveElement : VisualElement
     {
         private RiveWidget _widget;
+        private RivePanel _rivePanel;
+        
         private Asset _riveAsset;
         
         private Fit _fit = Fit.Contain;
@@ -59,9 +61,14 @@ namespace io.studio555.riveuitoolkitsupport {
         }
 
         private void OnGeometryChangedEvent(GeometryChangedEvent evt) {
-            if (_widget == null) return;
             var isVisible = evt.newRect is { width: > 0, height: > 0 };
-            _widget.enabled = isVisible;
+            if (_widget != null) {
+                _widget.enabled = isVisible;
+            }
+            if (_rivePanel != null) {
+                _rivePanel.enabled = isVisible;    
+            }
+            
         }
 
         private void OnAttachToPanelEvent(AttachToPanelEvent _) {
@@ -91,7 +98,7 @@ namespace io.studio555.riveuitoolkitsupport {
                 return;
             }
 
-            _widget = instance.Register(this);
+            (_widget, _rivePanel) = instance.Register(this);
             _widget.Fit = _fit;
             _widget.HitTestBehavior = HitTestBehavior.None;
             
@@ -109,6 +116,7 @@ namespace io.studio555.riveuitoolkitsupport {
             }
 
             _widget = null;
+            _rivePanel = null;
             instance.Unregister(this);
             _isRegistered = false;
         }

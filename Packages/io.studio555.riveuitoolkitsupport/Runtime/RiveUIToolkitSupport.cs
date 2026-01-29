@@ -60,9 +60,9 @@ namespace io.studio555.riveuitoolkitsupport {
             
         }
 
-        public RiveWidget Register(RiveElement riveElement) {
+        public (RiveWidget, RivePanel) Register(RiveElement riveElement) {
             if (_isQuitting) {
-                return null;
+                return (null, null);
             }
 
             Debug.Log($"[RiveUIToolkitSupport] Register {riveElement} {riveElement.RiveAsset}");
@@ -86,7 +86,7 @@ namespace io.studio555.riveuitoolkitsupport {
             riveElement.style.backgroundImage =
                 new StyleBackground(Background.FromRenderTexture(rivePanel.RenderTexture));
             _registeredElements[riveElement] = riveElementGo;
-            return riveWidget;
+            return (riveWidget, rivePanel);
         }
 
         public void Unregister(RiveElement riveElement) {
