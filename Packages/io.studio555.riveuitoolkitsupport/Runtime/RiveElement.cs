@@ -66,9 +66,12 @@ namespace io.studio555.riveuitoolkitsupport {
                 _widget.enabled = isVisible;
             }
             if (_rivePanel != null) {
-                _rivePanel.enabled = isVisible;    
+                _rivePanel.enabled = isVisible;
+
+                if (isVisible) {
+                    UpdateBackgroundFromPanel();
+                }
             }
-            
         }
 
         private void OnAttachToPanelEvent(AttachToPanelEvent _) {
@@ -101,7 +104,9 @@ namespace io.studio555.riveuitoolkitsupport {
             (_widget, _rivePanel) = instance.Register(this);
             _widget.Fit = _fit;
             _widget.HitTestBehavior = HitTestBehavior.None;
-            
+
+            UpdateBackgroundFromPanel();
+
             _isRegistered = true;
         }
 
@@ -115,12 +120,28 @@ namespace io.studio555.riveuitoolkitsupport {
                 return;
             }
 
+            // Clear background so we don't hold onto pooled RenderTextures
+            style.backgroundImage = default;
+
             _widget = null;
             _rivePanel = null;
             instance.Unregister(this);
             _isRegistered = false;
         }
-        
+
+        private void UpdateBackgroundFromPanel() {
+            if (_rivePanel == null) {
+                return;
+            }
+
+            var rt = _rivePanel.RenderTexture;
+            if (rt == null) {
+                return;
+            }
+
+            style.backgroundImage = new StyleBackground(Background.FromRenderTexture(rt));
+        }
+
         public bool TryFireTrigger(string triggerName) {
             
             if (_widget == null) {

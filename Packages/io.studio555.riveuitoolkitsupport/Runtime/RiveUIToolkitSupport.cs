@@ -54,7 +54,7 @@ namespace io.studio555.riveuitoolkitsupport {
             var renderTargetStrategyGo = new GameObject("RenderTargetStrategy");
             renderTargetStrategyGo.transform.SetParent(_instance.transform);
             var pooledRenderTargetStrategy = renderTargetStrategyGo.AddComponent<PooledRenderTargetStrategy>();
-            pooledRenderTargetStrategy.Configure(new Vector2Int(512, 512), 1, 3, PooledRenderTargetStrategy.PoolOverflowBehavior.Flexible);
+            pooledRenderTargetStrategy.Configure(new Vector2Int(512, 512), 1, 8, PooledRenderTargetStrategy.PoolOverflowBehavior.Flexible);
             
             _renderTargetStrategy = pooledRenderTargetStrategy;
             
@@ -82,9 +82,8 @@ namespace io.studio555.riveuitoolkitsupport {
 
             var riveWidget = riveWidgetGo.AddComponent<RiveWidget>();
             riveWidget.Load(riveElement.RiveAsset);
-            
-            riveElement.style.backgroundImage =
-                new StyleBackground(Background.FromRenderTexture(rivePanel.RenderTexture));
+
+            // Background image binding is now handled by RiveElement itself
             _registeredElements[riveElement] = riveElementGo;
             return (riveWidget, rivePanel);
         }
