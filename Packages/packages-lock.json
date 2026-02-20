@@ -1,13 +1,13 @@
 {
   "dependencies": {
     "app.rive.rive-unity": {
-      "version": "git@github.com:rive-app/rive-unity.git?path=package#v0.4.1-canary.48",
+      "version": "git@github.com:rive-app/rive-unity.git?path=package#v0.4.1-canary.95",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.unity.shadergraph": "14.0.11"
       },
-      "hash": "bab3ea1727c101d3b27f51a0f2abc55d08b874ca"
+      "hash": "3c437daa8d8a4e6ebdce321d7976d5fa51d7f35d"
     },
     "com.unity.ai.navigation": {
       "version": "2.0.9",
