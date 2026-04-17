@@ -1,11 +1,9 @@
 {
-    "name": "io.studio555.riveuitoolkitsupport",
-    "version": "0.0.10",
-    "displayName": "RiveUIToolkitSupport",
-    "description": "Unity Rive to UI toolkit bridge",
-    "unity": "6000.0",
-    "unityRelease": "27f1",
-    "dependencies": {
-         
-    }
+  "name": "io.studio555.riveuitoolkitsupport",
+  "version": "0.0.11",
+  "displayName": "RiveUIToolkitSupport",
+  "description": "Unity Rive to UI toolkit bridge",
+  "unity": "6000.0",
+  "unityRelease": "27f1",
+  "dependencies": {}
 }
