@@ -1,7 +1,20 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <engine:VisualElement name="Root" style="flex-grow: 1; background-color: rgb(214, 197, 171);">
-        <engine:Label text="RiveUIToolkitSupport" enable-rich-text="false" style="font-size: 23px; -unity-font-style: bold; -unity-text-align: upper-center; top: 20px;"/>
-        <engine:Button text="Toggle" name="ToggleButton" enable-rich-text="false" style="position: absolute; top: 62px; left: 17px;"/>
-        <io.studio555.riveuitoolkitsupport.RiveElement rive-asset="project://database/Assets/UI%20Toolkit/robo_dude.riv?fileID=-4516626237390682484&amp;guid=502498ce11265496491f28197712fc2c&amp;type=3#robo_dude" name="RoboDude" style="position: absolute; width: 80px; height: 80px; top: 155px; left: 130px;"/>
+        <engine:Label text="RiveUIToolkitSupport stress test" enable-rich-text="false" style="font-size: 23px; -unity-font-style: bold; -unity-text-align: upper-center; padding-top: 12px; padding-bottom: 6px;"/>
+
+        <engine:VisualElement name="Toolbar" style="flex-direction: row; flex-wrap: wrap; padding: 8px; background-color: rgb(190, 173, 145);">
+            <engine:Button name="ToggleHalfButton" text="Toggle every other" enable-rich-text="false"/>
+            <engine:Button name="SwapAssetsButton" text="Rotate assets" enable-rich-text="false"/>
+            <engine:Button name="ResizeButton" text="Randomize sizes" enable-rich-text="false"/>
+            <engine:Button name="RebuildButton" text="Rebuild grid" enable-rich-text="false"/>
+            <engine:Button name="ToggleSampleButton" text="Toggle RoboDude" enable-rich-text="false"/>
+            <engine:Label name="StatusLabel" text="(initializing)" enable-rich-text="false" style="margin-left: 16px; align-self: center;"/>
+        </engine:VisualElement>
+
+        <io.studio555.riveuitoolkitsupport.RiveElement rive-asset="project://database/Assets/UI%20Toolkit/robo_dude.riv?fileID=-4516626237390682484&amp;guid=502498ce11265496491f28197712fc2c&amp;type=3#robo_dude" name="RoboDude" style="position: absolute; width: 80px; height: 80px; top: 64px; right: 16px;"/>
+
+        <engine:ScrollView name="Grid" style="flex-grow: 1;">
+            <engine:VisualElement name="GridContent" style="flex-direction: row; flex-wrap: wrap; padding: 8px;"/>
+        </engine:ScrollView>
     </engine:VisualElement>
 </engine:UXML>

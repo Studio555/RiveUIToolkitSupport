@@ -9,34 +9,38 @@ namespace io.studio555.riveuitoolkitsupport {
     {
         private RiveWidget _widget;
         private RivePanel _rivePanel;
-        
+        private RectTransform _panelRect;
+
         private Asset _riveAsset;
-        
         private Fit _fit = Fit.Contain;
-        
+
+        private RenderTexture _lastBoundRT;
+        private bool _isRegistered;
+        private bool? _lastVisible;
+
+        private string _instanceId;
+
+        public string InstanceId => _instanceId ??= System.Guid.NewGuid().ToString();
         public RiveWidget Widget => _widget;
-        
+
         [UxmlAttribute]
         public Asset RiveAsset
         {
             get => _riveAsset;
             set
             {
-                if (_widget != null)
-                {
+                if (_widget != null) {
                     _riveAsset = value;
                     _widget.Load(_riveAsset);
                     _widget.Fit = _fit;
-                }
-                else
-                {
+                } else {
                     Unregister();
                     _riveAsset = value;
                     RegisterOnce();
                 }
             }
         }
-        
+
         [UxmlAttribute]
         public Fit Fit
         {
@@ -50,10 +54,6 @@ namespace io.studio555.riveuitoolkitsupport {
             }
         }
 
-        private bool _isRegistered;
-
-        public readonly string InstanceId = System.Guid.NewGuid().ToString();
-
         public RiveElement() {
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanelEvent);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanelEvent);
@@ -61,16 +61,31 @@ namespace io.studio555.riveuitoolkitsupport {
         }
 
         private void OnGeometryChangedEvent(GeometryChangedEvent evt) {
-            var isVisible = evt.newRect is { width: > 0, height: > 0 };
-            if (_widget != null) {
-                _widget.enabled = isVisible;
-            }
-            if (_rivePanel != null) {
-                _rivePanel.enabled = isVisible;
+            var rect = evt.newRect;
+            var isVisible = rect is { width: > 0, height: > 0 };
 
-                if (isVisible) {
-                    UpdateBackgroundFromPanel();
+            if (isVisible && _panelRect != null) {
+                var pp = panel?.scaledPixelsPerPoint ?? 1f;
+                var w = Mathf.Max(1, Mathf.RoundToInt(rect.width * pp));
+                var h = Mathf.Max(1, Mathf.RoundToInt(rect.height * pp));
+                var current = _panelRect.sizeDelta;
+                if ((int)current.x != w || (int)current.y != h) {
+                    _panelRect.sizeDelta = new Vector2(w, h);
                 }
+            }
+
+            if (_lastVisible != isVisible) {
+                _lastVisible = isVisible;
+                if (_widget != null) {
+                    _widget.enabled = isVisible;
+                }
+                if (_rivePanel != null) {
+                    _rivePanel.enabled = isVisible;
+                }
+            }
+
+            if (isVisible) {
+                UpdateBackgroundFromPanel();
             }
         }
 
@@ -78,7 +93,6 @@ namespace io.studio555.riveuitoolkitsupport {
             if (!Application.isPlaying) {
                 return;
             }
-
             RegisterOnce();
         }
 
@@ -86,10 +100,18 @@ namespace io.studio555.riveuitoolkitsupport {
             if (!Application.isPlaying) {
                 return;
             }
-
             Unregister();
         }
-        
+
+        private Vector2Int CurrentPixelSize() {
+            var rect = contentRect;
+            var w = float.IsNaN(rect.width)  ? 0f : rect.width;
+            var h = float.IsNaN(rect.height) ? 0f : rect.height;
+            var pp = panel?.scaledPixelsPerPoint ?? 1f;
+            return new Vector2Int(
+                Mathf.Max(1, Mathf.RoundToInt(w * pp)),
+                Mathf.Max(1, Mathf.RoundToInt(h * pp)));
+        }
 
         private void RegisterOnce() {
             if (_isRegistered) {
@@ -101,12 +123,21 @@ namespace io.studio555.riveuitoolkitsupport {
                 return;
             }
 
-            (_widget, _rivePanel) = instance.Register(this);
-            _widget.Fit = _fit;
-            _widget.HitTestBehavior = HitTestBehavior.None;
+            var registration = instance.Register(this, CurrentPixelSize());
+            _widget = registration.Widget;
+            _rivePanel = registration.Panel;
+            _panelRect = registration.PanelRect;
+
+            if (_widget != null) {
+                _widget.Fit = _fit;
+                _widget.HitTestBehavior = HitTestBehavior.None;
+            }
+
+            if (_rivePanel != null) {
+                _rivePanel.OnRenderTargetUpdated += OnRenderTargetUpdated;
+            }
 
             UpdateBackgroundFromPanel();
-
             _isRegistered = true;
         }
 
@@ -120,13 +151,25 @@ namespace io.studio555.riveuitoolkitsupport {
                 return;
             }
 
-            // Clear background so we don't hold onto pooled RenderTextures
+            if (_rivePanel != null) {
+                _rivePanel.OnRenderTargetUpdated -= OnRenderTargetUpdated;
+            }
+
+            // Drop the RT reference so we don't pin a soon-to-be-destroyed texture.
             style.backgroundImage = default;
+            _lastBoundRT = null;
+            _lastVisible = null;
 
             _widget = null;
             _rivePanel = null;
+            _panelRect = null;
+
             instance.Unregister(this);
             _isRegistered = false;
+        }
+
+        private void OnRenderTargetUpdated() {
+            UpdateBackgroundFromPanel();
         }
 
         private void UpdateBackgroundFromPanel() {
@@ -139,11 +182,15 @@ namespace io.studio555.riveuitoolkitsupport {
                 return;
             }
 
+            if (ReferenceEquals(rt, _lastBoundRT)) {
+                return;
+            }
+
+            _lastBoundRT = rt;
             style.backgroundImage = new StyleBackground(Background.FromRenderTexture(rt));
         }
 
         public bool TryFireTrigger(string triggerName) {
-            
             if (_widget == null) {
                 Debug.LogWarning($"[RiveElement] Widget is null for {this}");
                 return false;
@@ -162,6 +209,5 @@ namespace io.studio555.riveuitoolkitsupport {
             trigger.Fire();
             return true;
         }
-        
     }
 }

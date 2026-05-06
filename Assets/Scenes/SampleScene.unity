@@ -530,6 +530,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Sample
   uiDocument: {fileID: 1858722685}
+  riveAssets:
+  - {fileID: -4516626237390682484, guid: fdb1effd18e5d46e89a3583731c84699, type: 3}
+  - {fileID: -4516626237390682484, guid: 600de2fba50934bf29fc3da3a61d0523, type: 3}
+  - {fileID: -4516626237390682484, guid: 502498ce11265496491f28197712fc2c, type: 3}
+  - {fileID: -4516626237390682484, guid: b6aff8b6ee0414bdab6119dc5108ae46, type: 3}
+  - {fileID: -4516626237390682484, guid: b16103ff8d47c4395b7fd57994ace748, type: 3}
+  - {fileID: -4516626237390682484, guid: e437aefd021d840069cbb4d1774d8189, type: 3}
+  stressCount: 60
 --- !u!4 &1674725235
 Transform:
   m_ObjectHideFlags: 0

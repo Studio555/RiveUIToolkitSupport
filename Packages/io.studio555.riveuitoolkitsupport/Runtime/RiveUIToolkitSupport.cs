@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Rive.Components;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace io.studio555.riveuitoolkitsupport {
     [DefaultExecutionOrder(-1000)]
@@ -27,8 +26,19 @@ namespace io.studio555.riveuitoolkitsupport {
             }
         }
 
-        private IRenderTargetStrategy _renderTargetStrategy;
         private readonly Dictionary<RiveElement, GameObject> _registeredElements = new();
+
+        public readonly struct Registration {
+            public readonly RiveWidget Widget;
+            public readonly RivePanel Panel;
+            public readonly RectTransform PanelRect;
+
+            public Registration(RiveWidget widget, RivePanel panel, RectTransform panelRect) {
+                Widget = widget;
+                Panel = panel;
+                PanelRect = panelRect;
+            }
+        }
 
         private void Awake() {
             if (_instance != null && _instance != this) {
@@ -38,7 +48,6 @@ namespace io.studio555.riveuitoolkitsupport {
 
             _instance = this;
             DontDestroyOnLoad(gameObject);
-            Initialize();
         }
 
         private void OnApplicationQuit() {
@@ -50,42 +59,40 @@ namespace io.studio555.riveuitoolkitsupport {
                 _instance = null;
         }
 
-        private void Initialize() {
-            var renderTargetStrategyGo = new GameObject("RenderTargetStrategy");
-            renderTargetStrategyGo.transform.SetParent(_instance.transform);
-            var pooledRenderTargetStrategy = renderTargetStrategyGo.AddComponent<PooledRenderTargetStrategy>();
-            pooledRenderTargetStrategy.Configure(new Vector2Int(512, 512), 1, 8, PooledRenderTargetStrategy.PoolOverflowBehavior.Flexible);
-            
-            _renderTargetStrategy = pooledRenderTargetStrategy;
-            
-        }
-
-        public (RiveWidget, RivePanel) Register(RiveElement riveElement) {
+        public Registration Register(RiveElement riveElement, Vector2Int initialPixelSize) {
             if (_isQuitting) {
-                return (null, null);
+                return default;
             }
 
-            Debug.Log($"[RiveUIToolkitSupport] Register {riveElement} {riveElement.RiveAsset}");
-            var riveElementGo = new GameObject("RiveElement - " + riveElement.InstanceId);
-            riveElementGo.transform.SetParent(_instance.transform);
+            // Create with RectTransform up front so it's already sized when RivePanel.OnEnable
+            // registers with its auto-attached SimpleRenderTargetStrategy and queues the first draw.
+            var riveElementGo = new GameObject(
+                "RiveElement - " + riveElement.InstanceId,
+                typeof(RectTransform));
+            var rect = (RectTransform)riveElementGo.transform;
+            rect.SetParent(_instance.transform, worldPositionStays: false);
+            rect.sizeDelta = new Vector2(
+                Mathf.Max(1, initialPixelSize.x),
+                Mathf.Max(1, initialPixelSize.y));
 
             var rivePanel = riveElementGo.AddComponent<RivePanel>();
-            var simpleRenderTargetStrategy = rivePanel.gameObject.GetComponent<SimpleRenderTargetStrategy>();
-            if (simpleRenderTargetStrategy != null) {
-                Destroy(simpleRenderTargetStrategy);
-            }
 
-            rivePanel.RenderTargetStrategy = _renderTargetStrategy;
-
-            var riveWidgetGo = new GameObject("RiveWidget");
-            riveWidgetGo.transform.SetParent(riveElementGo.transform);
+            var riveWidgetGo = new GameObject("RiveWidget", typeof(RectTransform));
+            var widgetRect = (RectTransform)riveWidgetGo.transform;
+            widgetRect.SetParent(rect, worldPositionStays: false);
+            // Stretch the widget to fill the panel so the artboard's Fit calculation
+            // uses the full panel rect rather than the default 100x100.
+            widgetRect.anchorMin = Vector2.zero;
+            widgetRect.anchorMax = Vector2.one;
+            widgetRect.pivot = new Vector2(0.5f, 0.5f);
+            widgetRect.sizeDelta = Vector2.zero;
+            widgetRect.anchoredPosition = Vector2.zero;
 
             var riveWidget = riveWidgetGo.AddComponent<RiveWidget>();
             riveWidget.Load(riveElement.RiveAsset);
 
-            // Background image binding is now handled by RiveElement itself
             _registeredElements[riveElement] = riveElementGo;
-            return (riveWidget, rivePanel);
+            return new Registration(riveWidget, rivePanel, rect);
         }
 
         public void Unregister(RiveElement riveElement) {
@@ -97,7 +104,6 @@ namespace io.studio555.riveuitoolkitsupport {
                 return;
             }
 
-            Debug.Log($"[RiveUIToolkitSupport] Unregister {riveElement}");
             Destroy(go);
             _registeredElements.Remove(riveElement);
         }
