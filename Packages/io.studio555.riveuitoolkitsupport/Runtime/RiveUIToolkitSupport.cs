@@ -157,8 +157,11 @@ namespace io.studio555.riveuitoolkitsupport {
             if ((int)size.x != pixelW || (int)size.y != pixelH) {
                 entry.Rect.sizeDelta = new Vector2(pixelW, pixelH);
             }
-            entry.Widget.Load(riveElement.RiveAsset);
+            // Activate BEFORE Load: the widget's OnEnable populates its RivePanel reference and
+            // re-registers with the panel for rendering, and Load's HandleLoadComplete then runs
+            // against a fully-active widget (state machine, render transform, layout fix).
             entry.Root.SetActive(true);
+            entry.Widget.Load(riveElement.RiveAsset);
         }
     }
 }
