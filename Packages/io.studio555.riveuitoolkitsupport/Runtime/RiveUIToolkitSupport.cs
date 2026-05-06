@@ -26,7 +26,13 @@ namespace io.studio555.riveuitoolkitsupport {
             }
         }
 
-        private readonly Dictionary<RiveElement, GameObject> _registeredElements = new();
+        // Cap on how many parked panel GameObjects we keep alive between registrations.
+        // Each parked entry retains its RivePanel + SimpleRenderTargetStrategy + RenderTexture,
+        // so reusing them avoids the WaitForEndOfFrame renderer-release storm on scene transitions.
+        private const int MaxParkedElements = 32;
+
+        private readonly Dictionary<RiveElement, PanelEntry> _activeEntries = new();
+        private readonly Stack<PanelEntry> _parkedEntries = new();
 
         public readonly struct Registration {
             public readonly RiveWidget Widget;
@@ -38,6 +44,13 @@ namespace io.studio555.riveuitoolkitsupport {
                 Panel = panel;
                 PanelRect = panelRect;
             }
+        }
+
+        private class PanelEntry {
+            public GameObject Root;
+            public RectTransform Rect;
+            public RivePanel Panel;
+            public RiveWidget Widget;
         }
 
         private void Awake() {
@@ -64,21 +77,58 @@ namespace io.studio555.riveuitoolkitsupport {
                 return default;
             }
 
-            // Create with RectTransform up front so it's already sized when RivePanel.OnEnable
-            // registers with its auto-attached SimpleRenderTargetStrategy and queues the first draw.
-            var riveElementGo = new GameObject(
+            var pixelW = Mathf.Max(1, initialPixelSize.x);
+            var pixelH = Mathf.Max(1, initialPixelSize.y);
+
+            PanelEntry entry;
+            if (_parkedEntries.Count > 0) {
+                entry = _parkedEntries.Pop();
+                ReuseParkedEntry(entry, riveElement, pixelW, pixelH);
+            } else {
+                entry = CreateNewEntry(riveElement, pixelW, pixelH);
+            }
+
+            _activeEntries[riveElement] = entry;
+            return new Registration(entry.Widget, entry.Panel, entry.Rect);
+        }
+
+        public void Unregister(RiveElement riveElement) {
+            if (_isQuitting) {
+                return;
+            }
+
+            if (!_activeEntries.TryGetValue(riveElement, out var entry)) {
+                return;
+            }
+            _activeEntries.Remove(riveElement);
+
+            if (entry.Root == null) {
+                return;
+            }
+
+            if (_parkedEntries.Count < MaxParkedElements) {
+                entry.Root.SetActive(false);
+                entry.Root.name = "RiveElement (parked)";
+                _parkedEntries.Push(entry);
+            } else {
+                Destroy(entry.Root);
+            }
+        }
+
+        private PanelEntry CreateNewEntry(RiveElement riveElement, int pixelW, int pixelH) {
+            // Pre-size the RectTransform before adding RivePanel so the auto-attached
+            // SimpleRenderTargetStrategy allocates its first RT at the correct size.
+            var go = new GameObject(
                 "RiveElement - " + riveElement.InstanceId,
                 typeof(RectTransform));
-            var rect = (RectTransform)riveElementGo.transform;
+            var rect = (RectTransform)go.transform;
             rect.SetParent(_instance.transform, worldPositionStays: false);
-            rect.sizeDelta = new Vector2(
-                Mathf.Max(1, initialPixelSize.x),
-                Mathf.Max(1, initialPixelSize.y));
+            rect.sizeDelta = new Vector2(pixelW, pixelH);
 
-            var rivePanel = riveElementGo.AddComponent<RivePanel>();
+            var rivePanel = go.AddComponent<RivePanel>();
 
-            var riveWidgetGo = new GameObject("RiveWidget", typeof(RectTransform));
-            var widgetRect = (RectTransform)riveWidgetGo.transform;
+            var widgetGo = new GameObject("RiveWidget", typeof(RectTransform));
+            var widgetRect = (RectTransform)widgetGo.transform;
             widgetRect.SetParent(rect, worldPositionStays: false);
             // Stretch the widget to fill the panel so the artboard's Fit calculation
             // uses the full panel rect rather than the default 100x100.
@@ -88,24 +138,27 @@ namespace io.studio555.riveuitoolkitsupport {
             widgetRect.sizeDelta = Vector2.zero;
             widgetRect.anchoredPosition = Vector2.zero;
 
-            var riveWidget = riveWidgetGo.AddComponent<RiveWidget>();
-            riveWidget.Load(riveElement.RiveAsset);
+            var widget = widgetGo.AddComponent<RiveWidget>();
+            widget.Load(riveElement.RiveAsset);
 
-            _registeredElements[riveElement] = riveElementGo;
-            return new Registration(riveWidget, rivePanel, rect);
+            return new PanelEntry {
+                Root = go,
+                Rect = rect,
+                Panel = rivePanel,
+                Widget = widget,
+            };
         }
 
-        public void Unregister(RiveElement riveElement) {
-            if (_isQuitting) {
-                return;
+        private static void ReuseParkedEntry(PanelEntry entry, RiveElement riveElement, int pixelW, int pixelH) {
+            entry.Root.name = "RiveElement - " + riveElement.InstanceId;
+            // Resize before activation so the panel's first redraw on OnEnable already
+            // sees the right size; avoids an extra RT-resize round trip.
+            var size = entry.Rect.sizeDelta;
+            if ((int)size.x != pixelW || (int)size.y != pixelH) {
+                entry.Rect.sizeDelta = new Vector2(pixelW, pixelH);
             }
-
-            if (!_registeredElements.TryGetValue(riveElement, out var go)) {
-                return;
-            }
-
-            Destroy(go);
-            _registeredElements.Remove(riveElement);
+            entry.Widget.Load(riveElement.RiveAsset);
+            entry.Root.SetActive(true);
         }
     }
 }
