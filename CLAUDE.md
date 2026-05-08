@@ -14,19 +14,21 @@ Two files do everything. Read both before changing either — they are tightly c
 
 **`RiveElement.cs`** — a `[UxmlElement] partial class : VisualElement` exposing `RiveAsset` (Rive `Asset`) and `Fit` as `[UxmlAttribute]`s so they appear in UI Builder and in UXML. It owns no rendering itself; it holds a reference to a `RiveWidget` + `RivePanel` pair created on its behalf.
 
-**`RiveUIToolkitSupport.cs`** — a `MonoBehaviour` singleton (`[DefaultExecutionOrder(-1000)]`, auto-spawned via `Instance` getter, `DontDestroyOnLoad`) that owns a shared `PooledRenderTargetStrategy` (512x512, capacity 8, `Flexible` overflow) and, for each `RiveElement.Register(...)` call, builds a child GameObject hierarchy: `RiveElement-{guid}` → `RivePanel` (with the pooled strategy swapped in for the default `SimpleRenderTargetStrategy`) → child `RiveWidget` loaded with the asset.
+**`RiveUIToolkitSupport.cs`** — a `MonoBehaviour` singleton (`[DefaultExecutionOrder(-1000)]`, auto-spawned via `Instance` getter, `DontDestroyOnLoad`) that, for each `RiveElement.Register(...)` call, builds a child GameObject hierarchy: `RiveElement-{guid}` (RectTransform, sized to the element's pixel rect) → `RivePanel` (with its auto-attached `SimpleRenderTargetStrategy`) → child `RiveWidget` loaded with the asset.
 
-**The bridge**: each `RivePanel` renders to a `RenderTexture` from the pool; `RiveElement.UpdateBackgroundFromPanel()` assigns it as `style.backgroundImage` via `Background.FromRenderTexture(rt)`. There is no custom shader or draw call — UI Toolkit just paints the RT as a background image of the VisualElement.
+**No panel reuse.** `Unregister` always destroys the hierarchy. An earlier parking pool (commits `9a738fb`/`0c17f46`) was removed because reusing a `RivePanel` + `RiveWidget` across `Load(newAsset)` calls carried state across bindings (state machine residue, RT/asset binding mismatches) and was the recurring source of visibility/texture-state bugs. `RiveUIToolkitSupport.ReleaseAll()` is the explicit scene-transition hook: consumers call it before `SceneManager.LoadScene(...)` so the `RendererUtils.ReleaseRenderer` end-of-frame coroutines run now (one batched stall) rather than competing with the next scene's load. Cleanup is **manual** — the package does not subscribe to `SceneManager.sceneUnloaded`.
+
+**The bridge**: each `RivePanel` renders to a `RenderTexture` owned by its `SimpleRenderTargetStrategy`; `RiveElement.UpdateBackgroundFromPanel()` assigns it as `style.backgroundImage` via `Background.FromRenderTexture(rt)`. There is no custom shader or draw call — UI Toolkit just paints the RT as a background image of the VisualElement.
 
 **Lifecycle is event-driven, not Update-driven.** `RiveElement` registers in `AttachToPanelEvent` (only when `Application.isPlaying` — editor preview is intentionally a no-op), unregisters in `DetachFromPanelEvent`, and on `GeometryChangedEvent` toggles `_widget.enabled` / `_rivePanel.enabled` based on whether the rect has area. This is how hidden / `display: none` elements stop driving the GPU. Recent commits (`5ae5823`, `5c3f5f9`, `4d12b08`) all addressed visibility/texture-state edge cases here — be careful when refactoring this path; the current shape exists because of specific bugs.
 
-**Asset reassignment** has two branches in `RiveElement.RiveAsset.set`: if the widget already exists, just `_widget.Load(value)` and re-apply `Fit`; if it doesn't, `Unregister()` + `RegisterOnce()`. Don't collapse these — the first avoids destroying/recreating the GameObject hierarchy and the pooled RT.
+**Asset reassignment** has two branches in `RiveElement.RiveAsset.set`: if the widget already exists, just `_widget.Load(value)` and re-apply `Fit`; if it doesn't, `Unregister()` + `RegisterOnce()`. Don't collapse these — the first avoids destroying/recreating the GameObject hierarchy and its render texture.
 
-**Public API beyond UXML attributes**: `Widget` getter (exposes the underlying `RiveWidget` for advanced use) and `TryFireTrigger(string)` (looks up a state machine trigger by name and fires it; logs and returns `false` on any miss).
+**Public API beyond UXML attributes**: `Widget` getter (exposes the underlying `RiveWidget` for advanced use) and `TryFireTrigger(string)` (looks up a state machine trigger by name and fires it; logs and returns `false` on any miss). On `RiveUIToolkitSupport`: `ReleaseAll()` (see scene-transition note above).
 
 ## Versioning & dependencies
 
-- The package's version lives in `Packages/io.studio555.riveuitoolkitsupport/package.json` (currently `0.0.11`). When bumping the package, update this file.
+- The package's version lives in `Packages/io.studio555.riveuitoolkitsupport/package.json` (currently `0.1.3`). When bumping the package, update this file.
 - Rive is pinned to a git tag in `Packages/manifest.json`: `app.rive.rive-unity` → `git@github.com:rive-app/rive-unity.git?path=package#v0.4.3-canary.18`. Recent commits show the pattern is to bump this tag and the package version together (`d2be495`, `058aeb8`).
 - The package has zero `dependencies` in its own `package.json` — Rive is assumed to be present in the consuming project. The asmdef references it by GUID (`Rive.Runtime` and Unity's `UIElementsModule`).
 

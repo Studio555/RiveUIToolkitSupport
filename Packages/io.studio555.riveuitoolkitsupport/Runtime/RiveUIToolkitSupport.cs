@@ -26,13 +26,7 @@ namespace io.studio555.riveuitoolkitsupport {
             }
         }
 
-        // Cap on how many parked panel GameObjects we keep alive between registrations.
-        // Each parked entry retains its RivePanel + SimpleRenderTargetStrategy + RenderTexture,
-        // so reusing them avoids the WaitForEndOfFrame renderer-release storm on scene transitions.
-        private const int MaxParkedElements = 32;
-
         private readonly Dictionary<RiveElement, PanelEntry> _activeEntries = new();
-        private readonly Stack<PanelEntry> _parkedEntries = new();
 
         public readonly struct Registration {
             public readonly RiveWidget Widget;
@@ -80,14 +74,7 @@ namespace io.studio555.riveuitoolkitsupport {
             var pixelW = Mathf.Max(1, initialPixelSize.x);
             var pixelH = Mathf.Max(1, initialPixelSize.y);
 
-            PanelEntry entry;
-            if (_parkedEntries.Count > 0) {
-                entry = _parkedEntries.Pop();
-                ReuseParkedEntry(entry, riveElement, pixelW, pixelH);
-            } else {
-                entry = CreateNewEntry(riveElement, pixelW, pixelH);
-            }
-
+            var entry = CreateNewEntry(riveElement, pixelW, pixelH);
             _activeEntries[riveElement] = entry;
             return new Registration(entry.Widget, entry.Panel, entry.Rect);
         }
@@ -102,16 +89,36 @@ namespace io.studio555.riveuitoolkitsupport {
             }
             _activeEntries.Remove(riveElement);
 
-            if (entry.Root == null) {
-                return;
-            }
-
-            if (_parkedEntries.Count < MaxParkedElements) {
-                entry.Root.SetActive(false);
-                entry.Root.name = "RiveElement (parked)";
-                _parkedEntries.Push(entry);
-            } else {
+            if (entry.Root != null) {
                 Destroy(entry.Root);
+            }
+        }
+
+        // Tear down every active RiveElement registration immediately. Call before a scene
+        // transition so RendererUtils.ReleaseRenderer's WaitForEndOfFrame coroutines fire now
+        // (one batched stall) rather than competing with the next scene's load.
+        public void ReleaseAll() {
+            if (_isQuitting) return;
+            if (_activeEntries.Count == 0) return;
+
+            // Snapshot first: OnSupportReleased clears element-side state without calling back
+            // into Unregister, but we still iterate a copy so the dict can be cleared up front.
+            var count = _activeEntries.Count;
+            var elements = new RiveElement[count];
+            var entries = new PanelEntry[count];
+            var i = 0;
+            foreach (var kv in _activeEntries) {
+                elements[i] = kv.Key;
+                entries[i] = kv.Value;
+                i++;
+            }
+            _activeEntries.Clear();
+
+            for (var j = 0; j < count; j++) {
+                elements[j].OnSupportReleased();
+                if (entries[j].Root != null) {
+                    Destroy(entries[j].Root);
+                }
             }
         }
 
@@ -147,21 +154,6 @@ namespace io.studio555.riveuitoolkitsupport {
                 Panel = rivePanel,
                 Widget = widget,
             };
-        }
-
-        private static void ReuseParkedEntry(PanelEntry entry, RiveElement riveElement, int pixelW, int pixelH) {
-            entry.Root.name = "RiveElement - " + riveElement.InstanceId;
-            // Resize before activation so the panel's first redraw on OnEnable already
-            // sees the right size; avoids an extra RT-resize round trip.
-            var size = entry.Rect.sizeDelta;
-            if ((int)size.x != pixelW || (int)size.y != pixelH) {
-                entry.Rect.sizeDelta = new Vector2(pixelW, pixelH);
-            }
-            // Activate BEFORE Load: the widget's OnEnable populates its RivePanel reference and
-            // re-registers with the panel for rendering, and Load's HandleLoadComplete then runs
-            // against a fully-active widget (state machine, render transform, layout fix).
-            entry.Root.SetActive(true);
-            entry.Widget.Load(riveElement.RiveAsset);
         }
     }
 }

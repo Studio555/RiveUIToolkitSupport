@@ -151,6 +151,18 @@ namespace io.studio555.riveuitoolkitsupport {
                 return;
             }
 
+            OnSupportReleased();
+            instance.Unregister(this);
+        }
+
+        // Called by RiveUIToolkitSupport when it tears down this element's panel from its side
+        // (per-element Unregister or bulk ReleaseAll). Clears element-side refs without calling
+        // back into Support, so it's safe to invoke while iterating Support's active dict.
+        internal void OnSupportReleased() {
+            if (!_isRegistered) {
+                return;
+            }
+
             if (_rivePanel != null) {
                 _rivePanel.OnRenderTargetUpdated -= OnRenderTargetUpdated;
             }
@@ -164,7 +176,6 @@ namespace io.studio555.riveuitoolkitsupport {
             _rivePanel = null;
             _panelRect = null;
 
-            instance.Unregister(this);
             _isRegistered = false;
         }
 
